@@ -1,0 +1,177 @@
+{extend name='public/base' /}
+
+{block name='seo'}
+<title>{$title}</title>
+<meta name="keywords" content="{$keywords}">
+<meta name="description" content="{$desc}">
+{/block}
+
+
+{block name='content'}
+
+<section class="Hui-article-box">
+	<nav class="breadcrumb">
+		<i class="Hui-iconfont">&#xe67f;</i>
+		首页 
+		<span class="c-gray en">&gt;</span>
+		{$pTitle }
+		<span class="c-gray en">&gt;</span>
+		{$title }
+		<a class="btn btn-success radius r" style="line-height:1.6em;margin-top:3px" href="javascript:location.replace(location.href);" title="刷新" ><i class="Hui-iconfont">&#xe68f;</i></a></nav>
+	<div class="Hui-article">
+		<article class="cl pd-20">
+
+			<div class="cl pd-5 bg-1 bk-gray mt-20">
+				<span class="l">
+					<a href="javascript:;" onclick="article_add('添加文章','{:url("article/articleAdd")}','','510')" class="btn btn-primary radius">
+						<i class="Hui-iconfont">&#xe600;</i>
+						添加文章
+					</a>
+				</span>
+				<span class="r">共有数据：<strong>{$count}</strong> 条</span>
+			</div>
+			
+				<table class="table table-hover table-border table-bordered table-hover table-bg table-sort">
+					<thead>
+						<tr class="text-c">
+							<th >ID</th>
+							<th >标题</th>
+							<th>分类</th>
+							<th >作者</th>
+							<th >缩略图</th>
+							<th >创建时间</th>
+							<th >更新时间</th>							
+							<th >状态</th>							
+							<th width="100">操作</th>
+						</tr>
+					</thead>
+					<tbody>
+					{volist name='articleList' id='vo'}
+						<tr class="text-c">
+							<td>{$vo.id}</td>
+							<td>{$vo.name}</td>
+							<td>  {$vo.categoryName}</td>
+							<td>{$vo.author}</td>
+							<td><img src="{$vo.img|getImage}" width="80"></td>
+							<td>{$vo.create_time}</td>
+							<td>{$vo.update_time}</td>
+							<td class="td-status">  {//根据当前用户状态,设置启用样式}
+							{if condition="$vo.status eq '显示'"}
+							<span class="label label-success radius">{$vo.status}</span>
+							{else /}
+							<span class="label radius">{$vo.status}</span>
+							{/if}
+							</td>
+
+							<td class="td-manage">
+							<!--切换启用与禁用图标-->
+							<!--只允许admin有权启用或停用-->
+							{eq name="$Think.session.user_info.name" value="admin"}
+							{if condition="$vo.status eq '显示'"}
+							<a style="text-decoration:none" onClick="article_stop(this,{$vo.id})" href="javascript:;" title="隐藏">
+								<i class="Hui-iconfont">&#xe631;</i>
+							</a>
+							{else /}
+							<a style="text-decoration:none" onClick="article_start(this,{$vo.id})" href="javascript:;" title="显示">
+								<i class="Hui-iconfont">&#xe615;</i>
+							</a>
+							{/if}
+							{/eq}
+
+
+							<!-- 编辑 -->
+							<a title="编辑" href="javascript:;" onclick="article_edit('文章编辑','{:url("article/articleEdit",["id" => $vo['id']])}','1','800','500')" class="ml-5" style="text-decoration:none">
+							<i class="Hui-iconfont">&#xe6df;</i>
+							</a>
+
+							<!--只允许admin有删除权限-->
+							{eq name="$Think.session.user_info.name" value="admin"}
+							<a title="删除" href="javascript:;" onclick="article_del(this,{$vo.id})" class="ml-5" style="text-decoration:none">
+								<i class="Hui-iconfont">&#xe6e2;</i>
+							</a>
+							{/eq}
+
+
+						</td>
+						</tr>
+					{/volist}
+					</tbody>
+				</table>
+		</article>
+	</div>
+</section>
+
+{/block}
+
+{block name='js'}
+<!--请在下方写此页面业务相关的脚本--> 
+<script type="text/javascript" src="__STATIC__/lib/My97DatePicker/4.8/WdatePicker.js"></script> 
+<script type="text/javascript" src="__STATIC__/lib/datatables/1.10.0/jquery.dataTables.min.js"></script> 
+<script type="text/javascript" src="__STATIC__/lib/laypage/1.2/laypage.js"></script> 
+<script type="text/javascript">
+$(function(){
+
+	$('.table-sort tbody').on( 'click', 'tr', function () {
+		if ( $(this).hasClass('selected') ) {
+			$(this).removeClass('selected');
+		}
+		else {
+			table.$('tr.selected').removeClass('selected');
+			$(this).addClass('selected');
+		}
+	});
+});
+
+function article_add(title,url,w,h){
+	layer_show(title,url,w,h);
+}
+/*管理员-停用*/
+function article_stop(obj,id){
+
+	layer.confirm('确认要隐藏吗？',function(index){
+		//此处请求后台程序，下方是成功后的前台处理……
+		$.get("{:url('article/setStatus')}",{id:id});
+		
+		$(obj).parents("tr").find(".td-manage").prepend('<a onClick="article_start(this,'+id+')" href="javascript:;" title="启用" style="text-decoration:none"><i class="Hui-iconfont">&#xe615;</i></a>');
+		$(obj).parents("tr").find(".td-status").html('<span class="label label-default radius">隐藏</span>');
+		$(obj).remove();
+		layer.msg('隐藏!',{icon: 5,time:1000});
+	});
+}
+
+/*管理员-启用*/
+function article_start(obj,id){
+	layer.confirm('确认要显示吗？',function(index){
+		//此处请求后台程序，下方是成功后的前台处理……
+        $.get("{:url('article/setStatus')}",{id:id});
+		
+		$(obj).parents("tr").find(".td-manage").prepend('<a onClick="article_stop(this,'+id+')" href="javascript:;" title="停用" style="text-decoration:none"><i class="Hui-iconfont">&#xe631;</i></a>');
+		$(obj).parents("tr").find(".td-status").html('<span class="label label-success radius">显示</span>');
+		$(obj).remove();
+		layer.msg('显示!', {icon: 6,time:1000});
+	});
+}
+
+/*文章-删除*/
+function article_del(obj,id) {
+    //请求服务器脚本处理删除
+    $.get("{:url('article/deleteArticle')}", {id: id});
+    layer.confirm('确认要删除吗？', function (index) {
+        $(obj).parents("tr").remove();
+        layer.msg('已删除!', {icon: 1, time: 1000});
+    });
+}
+
+/*文章-编辑*/
+function article_edit(title,url,id,w,h){
+	$.get(url,{id:id});//执行控制器中的编辑操作
+	layer_show(title,url,w,h);
+}
+
+
+
+</script>
+<!--/请在上方写此页面业务相关的脚本-->
+{/block}
+</body>
+</html>
